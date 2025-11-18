@@ -1,21 +1,16 @@
--- Migração SQL para criar a tabela "games" no Supabase
+-- ============================================
+-- MIGRATION: 002_games.sql
+-- ============================================
+-- Cria a tabela de jogos cadastrados pelos usuários
 -- 
--- Esta tabela armazena os jogos cadastrados pelos usuários,
--- incluindo jogos base e suas expansões.
--- 
--- INSTRUÇÕES:
--- 1. Acesse o Supabase Dashboard (https://app.supabase.com)
--- 2. Vá em "SQL Editor"
--- 3. Cole este código SQL
--- 4. Execute a query
--- 
--- A tabela será criada com Row Level Security (RLS) habilitado,
--- garantindo que cada usuário só possa ver e modificar seus próprios jogos.
+-- Esta migration é idempotente e pode ser executada múltiplas vezes
+-- sem causar erros.
 
 -- ============================================
 -- TABELA: games
 -- ============================================
--- Armazena os jogos cadastrados pelos usuários
+-- Armazena os jogos cadastrados pelos usuários,
+-- incluindo jogos base e suas expansões
 CREATE TABLE IF NOT EXISTS public.games (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -31,6 +26,12 @@ CREATE TABLE IF NOT EXISTS public.games (
 
 -- Habilita Row Level Security na tabela games
 ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
+
+-- Remove políticas existentes (se houver) para recriar
+DROP POLICY IF EXISTS "Users can view own games" ON public.games;
+DROP POLICY IF EXISTS "Users can insert own games" ON public.games;
+DROP POLICY IF EXISTS "Users can update own games" ON public.games;
+DROP POLICY IF EXISTS "Users can delete own games" ON public.games;
 
 -- Política: Usuários podem ver apenas seus próprios jogos
 CREATE POLICY "Users can view own games"
@@ -56,12 +57,23 @@ CREATE POLICY "Users can delete own games"
   FOR DELETE
   USING (auth.uid() = user_id);
 
+-- ============================================
+-- ÍNDICES
+-- ============================================
 -- Índices para melhorar performance das consultas
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON public.games(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_name ON public.games(name);
 CREATE INDEX IF NOT EXISTS idx_games_parent_game_id ON public.games(parent_game_id);
 
--- Comentários nas colunas para documentação
+-- Comentários para documentação
 COMMENT ON TABLE public.games IS 'Tabela de jogos cadastrados pelos usuários';
+COMMENT ON COLUMN public.games.id IS 'ID único do jogo';
+COMMENT ON COLUMN public.games.user_id IS 'ID do usuário que cadastrou o jogo';
+COMMENT ON COLUMN public.games.name IS 'Nome do jogo';
+COMMENT ON COLUMN public.games.description IS 'Descrição do jogo (opcional)';
+COMMENT ON COLUMN public.games.min_players IS 'Número mínimo de jogadores (opcional)';
+COMMENT ON COLUMN public.games.max_players IS 'Número máximo de jogadores (opcional)';
+COMMENT ON COLUMN public.games.play_time_minutes IS 'Tempo médio de jogo em minutos (opcional)';
+COMMENT ON COLUMN public.games.image_url IS 'URL da imagem do jogo (opcional)';
 COMMENT ON COLUMN public.games.parent_game_id IS 'Se não nulo, indica que este é uma expansão do jogo referenciado';
 

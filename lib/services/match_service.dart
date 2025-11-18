@@ -88,6 +88,9 @@ class MatchService {
   /// - gameName: Nome do jogo jogado
   /// - result: Resultado da partida ('win' ou 'loss')
   /// - playedAt: Data/hora em que a partida foi jogada (opcional, usa agora se não fornecido)
+  ///
+  /// Observação: O ranking global e por jogo é atualizado automaticamente
+  /// por triggers configurados no banco (não é necessário chamar nada extra aqui).
   Future<void> createMatch({
     required String gameName,
     required String result,

@@ -10,6 +10,7 @@ import '../models/match.dart';
 import 'register_match_screen.dart';
 import 'games_screen.dart';
 import 'welcome_screen.dart';
+import 'ranking_screen.dart';
 
 /// Tela principal (home) do app Arkion
 /// 
@@ -285,6 +286,44 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: const Icon(
                         Icons.sports_esports,
+                        color: NeonTheme.teal,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Botão Ranking
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: NeonTheme.teal.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RankingScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                      child: const Icon(
+                        Icons.leaderboard,
                         color: NeonTheme.teal,
                         size: 20,
                       ),
