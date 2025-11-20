@@ -13,9 +13,9 @@ class GameService {
   final _supabase = Supabase.instance.client;
   final _matchService = MatchService();
 
-  /// Busca todos os jogos do usuário logado
+  /// Busca todos os jogos cadastrados
   /// 
-  /// Retorna uma lista de todos os jogos cadastrados pelo usuário,
+  /// Retorna uma lista de todos os jogos cadastrados por qualquer usuário,
   /// ordenados por nome.
   Future<List<Game>> getGames() async {
     try {
@@ -27,7 +27,6 @@ class GameService {
       final response = await _supabase
           .from('games')
           .select()
-          .eq('user_id', user.id)
           .order('name', ascending: true);
 
       final List<Game> games = (response as List)
@@ -42,7 +41,7 @@ class GameService {
 
   /// Busca apenas os jogos base (sem expansões)
   /// 
-  /// Retorna uma lista de jogos que não são expansões,
+  /// Retorna uma lista de todos os jogos que não são expansões,
   /// ou seja, jogos onde parent_game_id é null.
   Future<List<Game>> getBaseGames() async {
     try {
@@ -54,7 +53,6 @@ class GameService {
       final response = await _supabase
           .from('games')
           .select()
-          .eq('user_id', user.id)
           .isFilter('parent_game_id', null)
           .order('name', ascending: true);
 
@@ -70,7 +68,7 @@ class GameService {
 
   /// Busca as expansões de um jogo específico
   /// 
-  /// Retorna uma lista de jogos que são expansões do jogo
+  /// Retorna uma lista de todos os jogos que são expansões do jogo
   /// identificado por gameId.
   Future<List<Game>> getExpansions(String gameId) async {
     try {
@@ -82,7 +80,6 @@ class GameService {
       final response = await _supabase
           .from('games')
           .select()
-          .eq('user_id', user.id)
           .eq('parent_game_id', gameId)
           .order('name', ascending: true);
 
@@ -99,6 +96,7 @@ class GameService {
   /// Busca um jogo específico pelo ID
   /// 
   /// Retorna o jogo se encontrado, ou null se não existir.
+  /// Qualquer usuário autenticado pode buscar qualquer jogo.
   Future<Game?> getGame(String id) async {
     try {
       final user = _supabase.auth.currentUser;
@@ -110,7 +108,6 @@ class GameService {
           .from('games')
           .select()
           .eq('id', id)
-          .eq('user_id', user.id)
           .single();
 
       return Game.fromMap(response as Map<String, dynamic>);
