@@ -8,6 +8,7 @@ import '../components/neon_button.dart';
 import '../components/neon_text_field.dart';
 import '../services/game_service.dart';
 import '../models/game.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Tela para adicionar ou editar um jogo
 /// 
@@ -49,6 +50,17 @@ class _EditGameScreenState extends State<EditGameScreen> {
     super.initState();
     _loadBaseGames();
     if (widget.game != null) {
+      // Verifica se o jogo pertence ao usuário atual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null || widget.game!.userId != currentUser.id) {
+        // Bloqueia acesso silenciosamente
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
+        return;
+      }
       _loadGameData();
     }
   }

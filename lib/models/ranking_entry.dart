@@ -41,12 +41,26 @@ class RankingEntry {
   /// Cria uma instância a partir de um Map (retornado pelo Supabase)
   ///
   /// [position] deve ser fornecida externamente (serviço atribui)
+  /// 
+  /// Suporta dois formatos:
+  /// 1. Formato antigo: profiles(name) - usado pelo ranking global
+  /// 2. Formato novo: profile_name - usado pela view leaderboard_by_game_view
   factory RankingEntry.fromMap(
     Map<String, dynamic> map, {
     required int position,
     String? gameId,
   }) {
-    final profileData = map['profiles'] as Map<String, dynamic>?;
+    // Tenta obter o nome do usuário de duas formas:
+    // 1. Da view (profile_name direto)
+    // 2. Do join aninhado (profiles(name))
+    String? username;
+    if (map.containsKey('profile_name')) {
+      username = map['profile_name'] as String?;
+    } else {
+      final profileData = map['profiles'] as Map<String, dynamic>?;
+      username = profileData != null ? profileData['name'] as String? : null;
+    }
+
     return RankingEntry(
       userId: map['user_id'] as String,
       score: (map['score'] as num?)?.toInt() ?? 0,
@@ -55,7 +69,7 @@ class RankingEntry {
       matches: (map['matches'] as num?)?.toInt() ?? 0,
       position: position,
       gameId: gameId ?? map['game_id'] as String?,
-      username: profileData != null ? profileData['name'] as String? : null,
+      username: username,
     );
   }
 

@@ -12,11 +12,12 @@ class RankingService {
   /// Busca o ranking global completo (ordenado por score desc)
   ///
   /// Retorna uma lista de [RankingEntry] com a posição já calculada.
+  /// Usa a view leaderboard_view que faz JOIN explícito com profiles.
   Future<List<RankingEntry>> getGlobalRanking({int limit = 50}) async {
     try {
       final response = await _supabase
-          .from('leaderboard')
-          .select('user_id, score, wins, losses, matches, profiles(name)')
+          .from('leaderboard_view')
+          .select('user_id, score, wins, losses, matches, profile_name')
           .order('score', ascending: false)
           .limit(limit);
 
@@ -34,8 +35,8 @@ class RankingService {
   }) async {
     try {
       final response = await _supabase
-          .from('leaderboard_by_game')
-          .select('user_id, game_id, score, wins, losses, matches, profiles(name)')
+          .from('leaderboard_by_game_view')
+          .select('user_id, game_id, score, wins, losses, matches, profile_name')
           .eq('game_id', gameId)
           .order('score', ascending: false)
           .limit(limit);
@@ -56,8 +57,8 @@ class RankingService {
 
     try {
       final response = await _supabase
-          .from('leaderboard')
-          .select('user_id, score, wins, losses, matches, profiles(name)')
+          .from('leaderboard_view')
+          .select('user_id, score, wins, losses, matches, profile_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -78,8 +79,8 @@ class RankingService {
 
     try {
       final response = await _supabase
-          .from('leaderboard_by_game')
-          .select('user_id, game_id, score, wins, losses, matches, profiles(name)')
+          .from('leaderboard_by_game_view')
+          .select('user_id, game_id, score, wins, losses, matches, profile_name')
           .eq('user_id', user.id)
           .eq('game_id', gameId)
           .maybeSingle();

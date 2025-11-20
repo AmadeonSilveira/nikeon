@@ -7,6 +7,8 @@ import '../models/game.dart';
 import '../models/match.dart';
 import '../components/match_tile.dart';
 import 'edit_game_screen.dart';
+import 'game_ranking_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Tela de detalhes de um jogo
 /// 
@@ -373,21 +375,47 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
   }
 
   Widget _buildActions() {
-    return Row(
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final isOwner = currentUser != null && widget.game.userId == currentUser.id;
+
+    return Column(
       children: [
-        Expanded(
-          child: NeonButton.primary(
-            text: 'Editar',
-            onPressed: _editGame,
-          ),
+        // Botão de ranking (sempre visível)
+        NeonButton.primary(
+          text: 'Ver Ranking deste jogo',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GameRankingScreen(
+                  gameId: widget.game.id,
+                  gameName: widget.game.name,
+                ),
+              ),
+            );
+          },
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: NeonButton.secondary(
-            text: 'Deletar',
-            onPressed: _deleteGame,
+        // Botões de edição/deleção (apenas se for o dono)
+        if (isOwner) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: NeonButton.primary(
+                  text: 'Editar',
+                  onPressed: _editGame,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: NeonButton.secondary(
+                  text: 'Deletar',
+                  onPressed: _deleteGame,
+                ),
+              ),
+            ],
           ),
-        ),
+        ],
       ],
     );
   }
