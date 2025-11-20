@@ -3,6 +3,11 @@ import '../theme/neon_theme.dart';
 import '../services/ranking_service.dart';
 import '../models/ranking_entry.dart';
 import '../components/ranking_tile.dart';
+import '../widgets/neon_bottom_nav_bar.dart';
+import '../widgets/neon_fab.dart';
+import 'home_screen.dart';
+import 'register_match_screen.dart';
+import 'games_screen.dart';
 
 /// Tela de Ranking Global
 /// 
@@ -78,6 +83,31 @@ class _RankingScreenState extends State<RankingScreen> {
           ),
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: NeonFAB(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RegisterMatchScreen()),
+          );
+        },
+      ),
+      bottomNavigationBar: NeonBottomNavBar(
+        currentIndex: 1,
+        onTabSelected: (index) {
+          if (index == 0) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const GamesScreen()),
+            );
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -97,7 +127,12 @@ class _RankingScreenState extends State<RankingScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
               borderRadius: BorderRadius.circular(24),
               child: Container(
                 width: 48,

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import '../theme/neon_theme.dart';
 import '../components/game_card.dart';
+import '../widgets/neon_bottom_nav_bar.dart';
+import '../widgets/neon_fab.dart';
 import '../services/game_service.dart';
 import '../models/game.dart';
 import 'edit_game_screen.dart';
 import 'game_details_screen.dart';
+import 'home_screen.dart';
+import 'ranking_screen.dart';
+import 'register_match_screen.dart';
 
 /// Tela de "Meus Jogos"
 /// 
@@ -130,11 +135,30 @@ class _GamesScreenState extends State<GamesScreen> {
           ),
         ),
       ),
-      // Botão flutuante para adicionar jogo
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToEditGame(),
-        backgroundColor: NeonTheme.teal,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: NeonFAB(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RegisterMatchScreen()),
+          );
+        },
+      ),
+      bottomNavigationBar: NeonBottomNavBar(
+        currentIndex: 0,
+        onTabSelected: (index) {
+          if (index == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const RankingScreen()),
+            );
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
+        },
       ),
     );
   }
@@ -145,36 +169,41 @@ class _GamesScreenState extends State<GamesScreen> {
       padding: const EdgeInsets.all(20.0),
       child: Row(
         children: [
-          // Botão de voltar
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: NeonTheme.teal.withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.2),
+              // Botão de voltar
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: NeonTheme.teal.withOpacity(0.4),
+                    width: 1.5,
                   ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: NeonTheme.teal,
-                    size: 24,
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: NeonTheme.teal,
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
           const SizedBox(width: 16),
           // Título
           const Expanded(

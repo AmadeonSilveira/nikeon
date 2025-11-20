@@ -54,18 +54,19 @@ class NeonStatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: NeonTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: NeonTheme.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              softWrap: true,
+              overflow: TextOverflow.fade,
+            ),
+          ),
               if (icon != null)
                 Icon(
                   icon,
@@ -79,11 +80,14 @@ class NeonStatCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: accentColor,
               letterSpacing: 0.5,
             ),
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.fade,
           ),
         ],
       ),

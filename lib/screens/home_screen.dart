@@ -3,9 +3,12 @@ import '../theme/neon_theme.dart';
 import '../components/neon_button.dart';
 import '../components/neon_stat_card.dart';
 import '../components/match_tile.dart';
+import '../widgets/neon_bottom_nav_bar.dart';
+import '../widgets/neon_fab.dart';
 import '../services/auth_service.dart';
 import '../services/match_service.dart';
 import '../services/game_service.dart';
+import '../services/ranking_service.dart';
 import '../models/match.dart';
 import 'register_match_screen.dart';
 import 'games_screen.dart';
@@ -27,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   final _matchService = MatchService();
   final _gameService = GameService();
+  final _rankingService = RankingService();
   
   String? _userName;
   bool _isLoadingProfile = true;
@@ -40,6 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
     'losses': 0,
   };
   List<Match> _recentMatches = [];
+  int _currentIndex = -1; // -1=Home, 0=Games, 1=Ranking
+  List<Match> _allMatches = [];
+  bool _isLoadingAdvancedStats = true;
+  String? _mostPlayedGame;
+  int _mostPlayedCount = 0;
+  String? _mostWinsGame;
+  int _mostWinsCount = 0;
+  String? _lastGamePlayed;
+  bool _streakIsWin = true;
+  int _streakCount = 0;
+  String? _winRateText;
+  int _totalMinutesPlayed = 0;
+  String? _rankingPositionText;
 
   @override
   void initState() {
@@ -53,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUserProfile(),
       _loadStats(),
       _loadRecentMatches(),
+      _loadAdvancedStats(),
     ]);
   }
 
@@ -111,6 +129,115 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadAdvancedStats() async {
+    setState(() {
+      _isLoadingAdvancedStats = true;
+    });
+    try {
+      final matches = await _matchService.getRecentMatches(limit: 200);
+      final games = await _gameService.getGames();
+      final gameMap = {
+        for (var game in games) game.name: game,
+      };
+
+      setState(() {
+        _allMatches = matches;
+      });
+
+      final playCounts = <String, int>{};
+      final winCounts = <String, int>{};
+      int totalMinutes = 0;
+      final now = DateTime.now();
+      final weekAgo = now.subtract(const Duration(days: 7));
+      int totalLast7 = 0;
+      int winsLast7 = 0;
+
+      for (var match in matches) {
+        final name = match.gameName;
+        playCounts[name] = (playCounts[name] ?? 0) + 1;
+        final upper = name;
+        if (match.isWin) {
+          winCounts[upper] = (winCounts[upper] ?? 0) + 1;
+        }
+        final game = gameMap[name];
+        if (game?.playTimeMinutes != null) {
+          totalMinutes += game!.playTimeMinutes!;
+        }
+        if (match.playedAt.isAfter(weekAgo)) {
+          totalLast7++;
+          if (match.isWin) winsLast7++;
+        }
+      }
+
+      final mostPlayedEntry = playCounts.entries.fold<MapEntry<String, int>?>(
+        null,
+        (current, next) {
+          if (current == null || next.value > current.value) return next;
+          return current;
+        },
+      );
+      final mostWinsEntry = winCounts.entries.fold<MapEntry<String, int>?>(
+        null,
+        (current, next) {
+          if (current == null || next.value > current.value) return next;
+          return current;
+        },
+      );
+
+      String streakGameName = '';
+      bool streakIsWin = true;
+      int streakCount = 0;
+      if (matches.isNotEmpty) {
+        streakIsWin = matches.first.isWin;
+        streakGameName = matches.first.gameName;
+        for (var match in matches) {
+          if ((match.isWin && streakIsWin) || (!match.isWin && !streakIsWin)) {
+            streakCount++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      final user = _authService.getCurrentUser();
+      final String rankingPositionText;
+      if (user != null) {
+        final globalRanking = await _rankingService.getGlobalRanking(limit: 1000);
+        final position = globalRanking.indexWhere((entry) => entry.userId == user.id);
+        if (position != -1) {
+          rankingPositionText = 'Sua posição no ranking: #${position + 1}';
+        } else {
+          rankingPositionText = 'Você ainda não aparece no ranking global';
+        }
+      } else {
+        rankingPositionText = 'Você ainda não aparece no ranking global';
+      }
+
+      setState(() {
+        _mostPlayedGame = mostPlayedEntry?.key;
+        _mostPlayedCount = mostPlayedEntry?.value ?? 0;
+        _mostWinsGame = mostWinsEntry?.key;
+        _mostWinsCount = mostWinsEntry?.value ?? 0;
+        _lastGamePlayed = matches.isNotEmpty ? matches.first.gameName : null;
+        _streakIsWin = streakIsWin;
+        _streakCount = streakCount;
+        _winRateText = totalLast7 > 0
+            ? '${((winsLast7 / totalLast7) * 100).toStringAsFixed(0)}%'
+            : null;
+        _totalMinutesPlayed = totalMinutes;
+        if (totalLast7 == 0) {
+          _winRateText = 'Nenhuma partida na última semana';
+        }
+        _rankingPositionText = rankingPositionText;
+        _isLoadingAdvancedStats = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingAdvancedStats = false;
+      });
+    }
+  }
+
   /// Recarrega os dados após registrar uma nova partida
   Future<void> _refreshData() async {
     setState(() {
@@ -120,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.wait([
       _loadStats(),
       _loadRecentMatches(),
+      _loadAdvancedStats(),
     ]);
   }
 
@@ -207,7 +335,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: NeonFAB(onPressed: _navigateToRegisterMatch),
+      bottomNavigationBar: NeonBottomNavBar(
+        currentIndex: _currentIndex,
+        onTabSelected: _handleBottomNavTap,
+      ),
     );
+  }
+
+  void _handleBottomNavTap(int navIndex) {
+    setState(() => _currentIndex = navIndex);
+    if (navIndex == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const GamesScreen()),
+      );
+    } else if (navIndex == 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const RankingScreen()),
+      );
+    }
   }
 
   /// Constrói o header com saudação e logout
@@ -422,8 +571,120 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 24),
+        _buildAdvancedStatsSection(),
       ],
     );
+  }
+
+  Widget _buildAdvancedStatsSection() {
+    if (_isLoadingAdvancedStats) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16.0),
+          child: CircularProgressIndicator(color: NeonTheme.teal),
+        ),
+      );
+    }
+
+    final cards = [
+      _buildAdvancedCard(
+        title: 'Jogo mais jogado',
+        value: _mostPlayedGame != null
+            ? '$_mostPlayedGame · $_mostPlayedCount partidas'
+            : 'Nenhuma partida',
+        icon: Icons.local_fire_department,
+        color: NeonTheme.green,
+      ),
+      _buildAdvancedCard(
+        title: 'Mais vitórias em',
+        value: _mostWinsGame != null
+            ? '$_mostWinsGame · $_mostWinsCount vitórias'
+            : 'Nenhuma vitória registrada',
+        icon: Icons.emoji_events,
+        color: NeonTheme.green,
+      ),
+      _buildAdvancedCard(
+        title: 'Último jogo',
+        value: _lastGamePlayed ?? 'Nenhuma partida',
+        icon: Icons.history,
+        color: NeonTheme.teal,
+      ),
+      _buildAdvancedCard(
+        title: 'Streak atual',
+        value: _streakCount > 0
+            ? '$_streakCount ${_streakIsWin ? 'vitórias' : 'derrotas'}'
+            : 'Sem partidas recentes',
+        icon: _streakIsWin ? Icons.trending_up : Icons.trending_down,
+        color: _streakIsWin ? NeonTheme.green : NeonTheme.pink,
+      ),
+      _buildAdvancedCard(
+        title: 'Winrate 7 dias',
+        value: _winRateText ?? 'Nenhuma partida na última semana',
+        icon: Icons.calendar_today,
+        color: NeonTheme.magenta,
+      ),
+      _buildAdvancedCard(
+        title: 'Tempo total jogado',
+        value: _formatDuration(_totalMinutesPlayed),
+        icon: Icons.timer,
+        color: NeonTheme.teal,
+      ),
+      _buildAdvancedCard(
+        title: 'Ranking global',
+        value: _rankingPositionText ?? 'Você ainda não aparece no ranking global',
+        icon: Icons.leaderboard,
+        color: NeonTheme.green,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Estatísticas avançadas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: NeonTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.2,
+          children: cards,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return NeonStatCard(
+      title: title,
+      value: value,
+      accentColor: color,
+      icon: icon,
+    );
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes <= 0) return '0 min';
+    final hours = minutes ~/ 60;
+    final remaining = minutes % 60;
+    if (hours > 0) {
+      return '$hours h ${remaining} m';
+    }
+    return '$remaining min';
   }
 
   /// Constrói a seção de últimas partidas
