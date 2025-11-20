@@ -15,6 +15,9 @@ class NeonTextField extends StatefulWidget {
   /// Se o campo é para senha (oculta o texto)
   final bool obscureText;
   
+  /// Se deve mostrar botão de toggle para senha (apenas se obscureText for true)
+  final bool showPasswordToggle;
+  
   /// Controlador do texto (opcional)
   final TextEditingController? controller;
   
@@ -23,15 +26,20 @@ class NeonTextField extends StatefulWidget {
   
   /// Tipo de teclado
   final TextInputType? keyboardType;
+  
+  /// FocusNode externo (opcional, se não fornecido cria um interno)
+  final FocusNode? focusNode;
 
   const NeonTextField({
     super.key,
     required this.label,
     this.icon,
     this.obscureText = false,
+    this.showPasswordToggle = false,
     this.controller,
     this.validator,
     this.keyboardType,
+    this.focusNode,
   });
 
   @override
@@ -40,11 +48,23 @@ class NeonTextField extends StatefulWidget {
 
 class _NeonTextFieldState extends State<NeonTextField> {
   bool _isFocused = false;
-  final FocusNode _focusNode = FocusNode();
+  bool _obscureText = true;
+  late final FocusNode _focusNode;
+  bool _isInternalFocusNode = false;
 
   @override
   void initState() {
     super.initState();
+    _obscureText = widget.obscureText;
+    
+    // Usa o FocusNode fornecido ou cria um interno
+    if (widget.focusNode != null) {
+      _focusNode = widget.focusNode!;
+    } else {
+      _focusNode = FocusNode();
+      _isInternalFocusNode = true;
+    }
+    
     _focusNode.addListener(() {
       setState(() {
         _isFocused = _focusNode.hasFocus;
@@ -54,7 +74,10 @@ class _NeonTextFieldState extends State<NeonTextField> {
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    // Só dispõe se for o FocusNode interno
+    if (_isInternalFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -78,7 +101,7 @@ class _NeonTextFieldState extends State<NeonTextField> {
         controller: widget.controller,
         validator: widget.validator,
         keyboardType: widget.keyboardType,
-        obscureText: widget.obscureText,
+        obscureText: widget.obscureText && _obscureText,
         focusNode: _focusNode,
         style: const TextStyle(
           color: NeonTheme.textPrimary,
@@ -101,6 +124,21 @@ class _NeonTextFieldState extends State<NeonTextField> {
                   color: _isFocused
                       ? NeonTheme.teal
                       : NeonTheme.textSecondary,
+                )
+              : null,
+          suffixIcon: widget.showPasswordToggle && widget.obscureText
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                    color: _isFocused
+                        ? NeonTheme.teal
+                        : NeonTheme.textSecondary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
                 )
               : null,
           // Borda neon sutil

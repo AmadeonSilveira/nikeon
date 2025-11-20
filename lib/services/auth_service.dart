@@ -120,5 +120,39 @@ class AuthService {
   bool isAuthenticated() {
     return getCurrentUser() != null;
   }
+
+  /// Verifica se um email já está cadastrado
+  /// 
+  /// Retorna true se o email já existe, false caso contrário.
+  /// Usado para validação em tempo real durante o cadastro.
+  /// 
+  /// Usa a função segura email_exists() do banco de dados,
+  /// que funciona mesmo com RLS ativado sem expor dados pessoais.
+  /// 
+  /// Normaliza o email (trim + lowercase) antes de verificar.
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      
+      // Verifica se o email está vazio ou inválido
+      if (normalizedEmail.isEmpty || !normalizedEmail.contains('@')) {
+        return false;
+      }
+      
+      // Chama a função segura email_exists() via RPC
+      // A função retorna boolean: true se existe, false se não existe
+      final response = await _supabase.rpc(
+        'email_exists',
+        params: {'email_param': normalizedEmail},
+      );
+
+      // A função retorna um boolean diretamente
+      return response as bool? ?? false;
+    } catch (e) {
+      // Em caso de erro, retorna false para não bloquear o cadastro
+      // O erro será tratado na validação do formulário
+      return false;
+    }
+  }
 }
 

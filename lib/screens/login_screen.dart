@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Controladores para os campos de texto
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
   
   // Chave para o formulário (para validação)
   final _formKey = GlobalKey<FormState>();
@@ -35,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -62,12 +64,45 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // Mostra mensagem de erro
+      // Mostra mensagem de erro amigável
       if (mounted) {
+        // Foca novamente no campo de senha
+        _passwordFocusNode.requestFocus();
+        
+        // Exibe mensagem amigável e elegante
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao fazer login: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: NeonTheme.pink,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Email ou senha incorretos. Tente novamente.',
+                    style: TextStyle(
+                      color: NeonTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.black.withOpacity(0.9),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: NeonTheme.pink.withOpacity(0.5),
+                width: 1.5,
+              ),
+            ),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -156,7 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: 'Senha',
                             icon: Icons.lock,
                             obscureText: true,
+                            showPasswordToggle: true,
                             controller: _passwordController,
+                            focusNode: _passwordFocusNode,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Por favor, insira sua senha';
