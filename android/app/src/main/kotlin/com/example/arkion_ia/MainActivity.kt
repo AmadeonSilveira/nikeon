@@ -1,4 +1,4 @@
-package com.example.arkion_ia
+package com.example.nikeon
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 import 'create_account_screen.dart';
 import 'home_screen.dart';
 
-/// Tela de login do app Arkion
+/// Tela de login do app Nikeon
 /// 
 /// Permite que o usuário faça login com email e senha.
 /// Mantém o mesmo estilo visual neon gamer premium da tela de boas-vindas.

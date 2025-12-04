@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Serviço de autenticação do app Arkion
+/// Serviço de autenticação do app Nikeon
 /// 
 /// Centraliza toda a lógica de autenticação usando Supabase.
 /// Gerencia criação de usuários, login, logout e recuperação de perfil.

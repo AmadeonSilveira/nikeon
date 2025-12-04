@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "arkion_ia" "\0"
+            VALUE "FileDescription", "nikeon" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "arkion_ia" "\0"
+            VALUE "InternalName", "nikeon" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "arkion_ia.exe" "\0"
-            VALUE "ProductName", "arkion_ia" "\0"
+            VALUE "OriginalFilename", "nikeon.exe" "\0"
+            VALUE "ProductName", "nikeon" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -16,7 +16,7 @@ import 'games_screen.dart';
 import 'welcome_screen.dart';
 import 'ranking_screen.dart';
 
-/// Tela principal (home) do app Arkion
+/// Tela principal (home) do app Nikeon
 /// 
 /// Exibe um dashboard compacto com estatísticas, últimas partidas
 /// e ações principais. Mantém o mesmo estilo visual neon gamer premium.

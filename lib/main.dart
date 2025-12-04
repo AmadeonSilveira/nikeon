@@ -29,23 +29,23 @@ Future<void> main() async {
     anonKey: Env.supabaseAnonKey,
   );
 
-  runApp(const ArkionApp());
+  runApp(const NikeonApp());
 }
 
-/// Widget raiz da aplicação Arkion
+/// Widget raiz da aplicação Nikeon
 /// 
 /// Configura o MaterialApp e verifica se há sessão ativa.
 /// Se o usuário estiver logado, vai direto para HomeScreen.
 /// Caso contrário, mostra a WelcomeScreen.
-class ArkionApp extends StatelessWidget {
-  const ArkionApp({super.key});
+class NikeonApp extends StatelessWidget {
+  const NikeonApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
 
     return MaterialApp(
-      title: 'Arkion',
+      title: 'Nikeon',
       debugShowCheckedModeBanner: false,
       // Tema escuro como base para o tema neon
       theme: ThemeData(

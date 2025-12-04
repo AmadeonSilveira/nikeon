@@ -4,7 +4,7 @@ import '../components/neon_button.dart';
 import 'login_screen.dart';
 import 'create_account_screen.dart';
 
-/// Tela de boas-vindas do app Arkion
+/// Tela de boas-vindas do app Nikeon
 /// 
 /// Exibe uma tela de apresentação com tema neon gamer premium,
 /// incluindo logo, título, subtítulo e botões de ação.
@@ -33,7 +33,7 @@ class WelcomeScreen extends StatelessWidget {
                   
                   // Título principal
                   const Text(
-                    'Bem-vindo(a) ao Arkion',
+                    'Bem-vindo(a) ao Nikeon',
                     style: NeonTheme.titleStyle,
                     textAlign: TextAlign.center,
                   ),

@@ -11,7 +11,7 @@ import 'games_screen.dart';
 
 /// Tela de Ranking Global
 /// 
-/// Exibe o ranking global de todos os jogadores do Arkion,
+/// Exibe o ranking global de todos os jogadores do Nikeon,
 /// ordenado por pontuação (score). Mantém o estilo visual neon gamer premium.
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
@@ -165,7 +165,7 @@ class _RankingScreenState extends State<RankingScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Top jogadores do Arkion',
+          'Top jogadores do Nikeon',
           style: NeonTheme.subtitleStyle,
         ),
       ],

@@ -7,7 +7,7 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 
-/// Tela de criar conta do app Arkion
+/// Tela de criar conta do app Nikeon
 /// 
 /// Permite que o usuário crie uma nova conta com nome, email e senha.
 /// Mantém o mesmo estilo visual neon gamer premium das outras telas.

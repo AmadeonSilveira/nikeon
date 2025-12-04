@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Tema Neon Gamer Premium para o app Arkion
+/// Tema Neon Gamer Premium para o app Nikeon
 /// 
 /// Este arquivo contém todas as cores, gradientes e estilos de texto
 /// com tema neon para manter consistência visual em todo o app.

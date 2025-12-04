@@ -1,6 +1,6 @@
 # Configuração do Supabase Storage para Imagens de Jogos
 
-Este documento explica como configurar o Supabase Storage para armazenar imagens de jogos no app Arkion.
+Este documento explica como configurar o Supabase Storage para armazenar imagens de jogos no app Nikeon.
 
 ## Passo 1: Criar o Bucket
 

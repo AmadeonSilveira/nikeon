@@ -1,6 +1,6 @@
-# Configuração do Supabase para o Arkion
+# Configuração do Supabase para o Nikeon
 
-Este documento explica como configurar o Supabase no projeto Arkion.
+Este documento explica como configurar o Supabase no projeto Nikeon.
 
 ## Passo 1: Criar um projeto no Supabase
 
