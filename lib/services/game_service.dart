@@ -121,7 +121,7 @@ class GameService {
   /// 
   /// Cria um novo registro de jogo. O ID será gerado automaticamente
   /// pelo Supabase se não fornecido.
-  Future<void> addGame(Game game) async {
+  Future<void> addGame(Game game, {Map<String, dynamic>? scoringConfig}) async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
@@ -143,6 +143,7 @@ class GameService {
         'play_time_minutes': game.playTimeMinutes,
         'image_url': game.imageUrl,
         'parent_game_id': game.parentGameId,
+        'scoring_config': scoringConfig ?? game.scoringConfig,
       };
 
       // Remove campos null
@@ -158,7 +159,7 @@ class GameService {
   /// 
   /// Atualiza os campos do jogo identificado por game.id.
   /// Apenas o dono do jogo pode atualizá-lo (garantido pelo RLS).
-  Future<void> updateGame(Game game) async {
+  Future<void> updateGame(Game game, {Map<String, dynamic>? scoringConfig}) async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
@@ -183,6 +184,9 @@ class GameService {
 
       // Remove campos null
       data.removeWhere((key, value) => value == null);
+      if (scoringConfig != null) {
+        data['scoring_config'] = scoringConfig;
+      }
 
       await _supabase
           .from('games')

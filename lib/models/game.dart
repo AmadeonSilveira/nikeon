@@ -32,6 +32,9 @@ class Game {
   
   /// Data/hora de criação do registro
   final DateTime createdAt;
+  
+  /// Configurações de pontuação (JSON)
+  final Map<String, dynamic> scoringConfig;
 
   const Game({
     required this.id,
@@ -43,6 +46,7 @@ class Game {
     this.playTimeMinutes,
     this.imageUrl,
     this.parentGameId,
+    this.scoringConfig = const {},
     required this.createdAt,
   });
 
@@ -64,6 +68,9 @@ class Game {
           : null,
       imageUrl: map['image_url'] as String?,
       parentGameId: map['parent_game_id'] as String?,
+      scoringConfig: map['scoring_config'] != null
+          ? Map<String, dynamic>.from(map['scoring_config'] as Map<String, dynamic>)
+          : {},
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
@@ -80,6 +87,7 @@ class Game {
       'play_time_minutes': playTimeMinutes,
       'image_url': imageUrl,
       'parent_game_id': parentGameId,
+      'scoring_config': scoringConfig,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -107,6 +115,7 @@ class Game {
       playTimeMinutes: playTimeMinutes ?? this.playTimeMinutes,
       imageUrl: imageUrl ?? this.imageUrl,
       parentGameId: parentGameId ?? this.parentGameId,
+      scoringConfig: scoringConfig ?? this.scoringConfig,
       createdAt: createdAt ?? this.createdAt,
     );
   }
