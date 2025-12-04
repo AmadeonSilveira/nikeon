@@ -5,8 +5,8 @@
 Crie um arquivo chamado `.env` na raiz do projeto (mesmo nível do `pubspec.yaml`) com o seguinte conteúdo:
 
 ```env
-SUPABASE_URL=https://jjgmulwkbkqseqqhbzul.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ211bHdrYmtxc2VxcWhienVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzg4MzIsImV4cCI6MjA3ODkxNDgzMn0.BgwMFZl8-6KSG3Dhj9bGA71htzjO16q5qsB4eWJl2D8
+SUPABASE_URL=supabase_url
+SUPABASE_ANON_KEY=anon_key
 ```
 
 **IMPORTANTE:** Substitua os valores acima pelas suas credenciais reais do Supabase se ainda não foram configuradas.
