@@ -11,7 +11,10 @@ import '../models/game.dart';
 /// Permite que o usuário registre uma partida jogada,
 /// incluindo nome do jogo, resultado e data.
 class RegisterMatchScreen extends StatefulWidget {
-  const RegisterMatchScreen({super.key});
+  /// Jogo pré-selecionado (opcional)
+  final Game? selectedGame;
+
+  const RegisterMatchScreen({super.key, this.selectedGame});
 
   @override
   State<RegisterMatchScreen> createState() => _RegisterMatchScreenState();
@@ -42,6 +45,10 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     // Define a data padrão como hoje
     _selectedDate = DateTime.now();
     _dateController.text = _formatDate(_selectedDate!);
+    // Se um jogo foi pré-selecionado, define como selecionado
+    if (widget.selectedGame != null) {
+      _selectedGameId = widget.selectedGame!.id;
+    }
     _loadGames();
   }
 

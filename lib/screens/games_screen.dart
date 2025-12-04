@@ -11,10 +11,10 @@ import 'home_screen.dart';
 import 'ranking_screen.dart';
 import 'register_match_screen.dart';
 
-/// Tela de "Meus Jogos"
+/// Tela de "Jogos"
 /// 
-/// Exibe a lista de jogos cadastrados pelo usuário,
-/// permitindo visualizar, adicionar, editar e deletar jogos.
+/// Exibe a lista de todos os jogos cadastrados,
+/// permitindo visualizar, registrar partidas e editar (apenas jogos próprios).
 class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
 
@@ -208,12 +208,42 @@ class _GamesScreenState extends State<GamesScreen> {
           // Título
           const Expanded(
             child: Text(
-              'Meus Jogos',
+              'Jogos',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: NeonTheme.textPrimary,
                 letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          // Botão de adicionar jogo
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: NeonTheme.teal.withOpacity(0.4),
+                width: 1.5,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _navigateToEditGame(),
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.2),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: NeonTheme.teal,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
           ),
@@ -260,6 +290,21 @@ class _GamesScreenState extends State<GamesScreen> {
     );
   }
 
+  /// Navega para a tela de registro de partida com o jogo pré-selecionado
+  Future<void> _navigateToRegisterMatch(Game game) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RegisterMatchScreen(selectedGame: game),
+      ),
+    );
+
+    // Se uma partida foi registrada, recarrega a lista
+    if (result == true && mounted) {
+      await _loadGames();
+    }
+  }
+
   /// Constrói a lista de jogos
   Widget _buildGamesList() {
     return RefreshIndicator(
@@ -276,6 +321,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 ? _parentGameNames[game.parentGameId]
                 : null,
             onTap: () => _navigateToGameDetails(game),
+            onRegisterMatch: () => _navigateToRegisterMatch(game),
           );
         },
       ),

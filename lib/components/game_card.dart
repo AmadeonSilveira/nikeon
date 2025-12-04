@@ -15,12 +15,16 @@ class GameCard extends StatelessWidget {
   
   /// Função chamada quando o card é pressionado
   final VoidCallback? onTap;
+  
+  /// Função chamada quando o botão de registrar partida é pressionado
+  final VoidCallback? onRegisterMatch;
 
   const GameCard({
     super.key,
     required this.game,
     this.parentGameName,
     this.onTap,
+    this.onRegisterMatch,
   });
 
   @override
@@ -167,6 +171,33 @@ class GameCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Botão de registro de partida (sempre visível)
+            if (onRegisterMatch != null) ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onRegisterMatch,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: NeonTheme.teal.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: NeonTheme.teal.withOpacity(0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.add_circle_outline,
+                      color: NeonTheme.teal,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             // Seta indicando que é clicável
             Icon(
               Icons.chevron_right,
