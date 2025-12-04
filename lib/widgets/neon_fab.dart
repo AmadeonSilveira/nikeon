@@ -9,39 +9,42 @@ class NeonFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              NeonTheme.teal,
-              NeonTheme.green.withOpacity(0.9),
+    return Transform.translate(
+      offset: const Offset(0, 8), // Move o botão 8px para dentro do navbar
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: 56, // Reduzido de 70 para 56
+          height: 56, // Reduzido de 70 para 56
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                NeonTheme.teal,
+                NeonTheme.green.withOpacity(0.9),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18), // Ajustado proporcionalmente
+            boxShadow: [
+              BoxShadow(
+                color: NeonTheme.teal.withOpacity(0.5),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+              BoxShadow(
+                color: NeonTheme.green.withOpacity(0.3),
+                blurRadius: 6,
+                spreadRadius: 0.5,
+              ),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: NeonTheme.teal.withOpacity(0.6),
-              blurRadius: 30,
-              spreadRadius: 4,
+          child: const Center(
+            child: Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 26, // Reduzido de 32 para 26
             ),
-            BoxShadow(
-              color: NeonTheme.green.withOpacity(0.4),
-              blurRadius: 12,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.add,
-            color: Colors.white,
-            size: 32,
           ),
         ),
       ),
