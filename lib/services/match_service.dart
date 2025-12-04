@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/match.dart';
+import '../models/match_participant.dart';
 
 /// Serviço para gerenciar partidas no Supabase
 /// 
@@ -41,8 +42,10 @@ class MatchService {
   /// 
   /// Retorna um Map com:
   /// - 'total': total de partidas jogadas
-  /// - 'wins': número de vitórias
+  /// - 'wins': número de vitórias (baseado em participantes vencedores)
   /// - 'losses': número de derrotas
+  /// 
+  /// Agora considera os participantes vencedores em vez de apenas o campo result.
   Future<Map<String, int>> getStats() async {
     try {
       final user = _supabase.auth.currentUser;
@@ -50,25 +53,72 @@ class MatchService {
         throw Exception('Usuário não autenticado');
       }
 
-      // Busca todas as partidas do usuário
-      final response = await _supabase
+      // Busca todas as partidas do usuário com seus IDs
+      final matchesResponse = await _supabase
           .from('matches')
-          .select('result')
+          .select('id, result')
           .eq('user_id', user.id);
 
-      final List<dynamic> matches = response as List;
+      final List<dynamic> matches = matchesResponse as List;
+      final int total = matches.length;
 
-      // Calcula as estatísticas
-      int total = matches.length;
+      if (total == 0) {
+        return {
+          'total': 0,
+          'wins': 0,
+          'losses': 0,
+        };
+      }
+
+      // Busca os IDs das partidas
+      final matchIds = matches.map((m) => (m as Map<String, dynamic>)['id'] as String).toList();
+
+      // Busca participantes vencedores do usuário para essas partidas
+      // Usa uma abordagem com OR para filtrar por múltiplos match_ids
+      if (matchIds.isEmpty) {
+        return {
+          'total': 0,
+          'wins': 0,
+          'losses': 0,
+        };
+      }
+
+      // Constrói filtro OR para múltiplos match_ids
+      String orFilter = matchIds.map((id) => 'match_id.eq.$id').join(',');
+      
+      final participantsResponse = await _supabase
+          .from('match_participants')
+          .select('match_id')
+          .or(orFilter)
+          .eq('user_id', user.id)
+          .eq('is_winner', true);
+
+      final List<dynamic> winningParticipants = participantsResponse as List;
+      final Set<String> winningMatchIds = winningParticipants
+          .map((p) => (p as Map<String, dynamic>)['match_id'] as String)
+          .toSet();
+
+      // Calcula vitórias baseado nos participantes vencedores
+      // Se não houver participantes vencedores, usa o campo result como fallback
       int wins = 0;
       int losses = 0;
 
       for (var match in matches) {
-        final result = (match as Map<String, dynamic>)['result'] as String;
-        if (result == 'win') {
+        final matchMap = match as Map<String, dynamic>;
+        final matchId = matchMap['id'] as String;
+        final result = matchMap['result'] as String;
+
+        // Verifica se o usuário está entre os vencedores pelos participantes
+        if (winningMatchIds.contains(matchId)) {
           wins++;
-        } else if (result == 'loss') {
-          losses++;
+        } else {
+          // Fallback: usa o campo result se não houver participantes
+          // (pode acontecer em partidas antigas sem participantes)
+          if (result == 'win') {
+            wins++;
+          } else {
+            losses++;
+          }
         }
       }
 
@@ -86,14 +136,17 @@ class MatchService {
   /// 
   /// Parâmetros:
   /// - gameName: Nome do jogo jogado
-  /// - result: Resultado da partida ('win' ou 'loss')
   /// - playedAt: Data/hora em que a partida foi jogada (opcional, usa agora se não fornecido)
+  /// - participants: Lista de participantes da partida (obrigatório)
+  ///
+  /// O resultado da partida é calculado automaticamente baseado nos participantes vencedores.
+  /// Se o usuário atual estiver entre os vencedores, result = 'win', caso contrário 'loss'.
   ///
   /// Observação: O ranking global e por jogo é atualizado automaticamente
   /// por triggers configurados no banco (não é necessário chamar nada extra aqui).
   Future<void> createMatch({
     required String gameName,
-    required String result,
+    required List<MatchParticipant> participants,
     DateTime? playedAt,
   }) async {
     try {
@@ -102,26 +155,52 @@ class MatchService {
         throw Exception('Usuário não autenticado');
       }
 
-      // Valida o resultado
-      if (result != 'win' && result != 'loss') {
-        throw Exception('Resultado inválido. Use "win" ou "loss"');
-      }
-
       // Valida o nome do jogo
       if (gameName.trim().isEmpty) {
         throw Exception('Nome do jogo não pode estar vazio');
       }
 
+      // Valida se há participantes
+      if (participants.isEmpty) {
+        throw Exception('É necessário pelo menos um participante');
+      }
+
+      // Calcula o resultado baseado nos participantes vencedores
+      // Se o usuário atual estiver entre os vencedores, result = 'win'
+      final userIsWinner = participants.any((p) => 
+        p.userId == user.id && p.isWinner
+      );
+      final result = userIsWinner ? 'win' : 'loss';
+
       // Usa a data atual se não fornecida
       final matchDate = playedAt ?? DateTime.now();
 
       // Insere a partida no banco de dados
-      await _supabase.from('matches').insert({
-        'user_id': user.id,
-        'game_name': gameName.trim(),
-        'result': result,
-        'played_at': matchDate.toIso8601String(),
-      });
+      final matchResponse = await _supabase
+          .from('matches')
+          .insert({
+            'user_id': user.id,
+            'game_name': gameName.trim(),
+            'result': result,
+            'played_at': matchDate.toIso8601String(),
+          })
+          .select()
+          .single();
+
+      final matchId = matchResponse['id'] as String;
+
+      // Insere os participantes
+      final participantsData = participants.map((participant) {
+        return {
+          'match_id': matchId,
+          'user_id': participant.userId,
+          'name': participant.name,
+          'is_winner': participant.isWinner,
+          'score': participant.score,
+        };
+      }).toList();
+
+      await _supabase.from('match_participants').insert(participantsData);
     } catch (e) {
       throw Exception('Erro ao criar partida: ${e.toString()}');
     }

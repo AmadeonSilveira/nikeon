@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/neon_theme.dart';
 import '../components/neon_button.dart';
 import '../components/neon_stat_card.dart';
@@ -144,6 +145,45 @@ class _HomeScreenState extends State<HomeScreen> {
         _allMatches = matches;
       });
 
+      // Busca participantes vencedores para todas as partidas
+      final matchIds = matches.map((m) => m.id).toList();
+      final user = _authService.getCurrentUser();
+      
+      Set<String> winningMatchIds = {};
+      Set<String> matchesWithParticipants = {};
+      
+      if (matchIds.isNotEmpty && user != null) {
+        try {
+          final supabase = Supabase.instance.client;
+          
+          // Busca todos os participantes do usuário (vencedores e não vencedores)
+          // Usa uma abordagem com OR para filtrar por múltiplos match_ids
+          String orFilter = matchIds.map((id) => 'match_id.eq.$id').join(',');
+          
+          final allParticipantsResponse = await supabase
+              .from('match_participants')
+              .select('match_id, is_winner')
+              .or(orFilter)
+              .eq('user_id', user.id);
+          
+          final List<dynamic> allParticipants = allParticipantsResponse as List;
+          
+          for (var participant in allParticipants) {
+            final pMap = participant as Map<String, dynamic>;
+            final matchId = pMap['match_id'] as String;
+            final isWinner = pMap['is_winner'] as bool? ?? false;
+            
+            matchesWithParticipants.add(matchId);
+            if (isWinner) {
+              winningMatchIds.add(matchId);
+            }
+          }
+        } catch (e) {
+          // Se houver erro ao buscar participantes, usa o campo result como fallback
+          print('Erro ao buscar participantes: $e');
+        }
+      }
+
       final playCounts = <String, int>{};
       final winCounts = <String, int>{};
       int totalMinutes = 0;
@@ -155,17 +195,24 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var match in matches) {
         final name = match.gameName;
         playCounts[name] = (playCounts[name] ?? 0) + 1;
-        final upper = name;
-        if (match.isWin) {
-          winCounts[upper] = (winCounts[upper] ?? 0) + 1;
+        
+        // Verifica se o usuário venceu baseado nos participantes
+        // Se a partida não tiver participantes, usa o campo result como fallback
+        final isWin = matchesWithParticipants.contains(match.id)
+            ? winningMatchIds.contains(match.id)
+            : match.isWin;
+        
+        if (isWin) {
+          winCounts[name] = (winCounts[name] ?? 0) + 1;
         }
+        
         final game = gameMap[name];
         if (game?.playTimeMinutes != null) {
           totalMinutes += game!.playTimeMinutes!;
         }
         if (match.playedAt.isAfter(weekAgo)) {
           totalLast7++;
-          if (match.isWin) winsLast7++;
+          if (isWin) winsLast7++;
         }
       }
 
@@ -188,10 +235,21 @@ class _HomeScreenState extends State<HomeScreen> {
       bool streakIsWin = true;
       int streakCount = 0;
       if (matches.isNotEmpty) {
-        streakIsWin = matches.first.isWin;
-        streakGameName = matches.first.gameName;
+        // Determina o resultado da primeira partida baseado em participantes
+        final firstMatch = matches.first;
+        final firstMatchIsWin = matchesWithParticipants.contains(firstMatch.id)
+            ? winningMatchIds.contains(firstMatch.id)
+            : firstMatch.isWin;
+        streakIsWin = firstMatchIsWin;
+        streakGameName = firstMatch.gameName;
+        
         for (var match in matches) {
-          if ((match.isWin && streakIsWin) || (!match.isWin && !streakIsWin)) {
+          // Verifica se o usuário venceu baseado nos participantes
+          final matchIsWin = matchesWithParticipants.contains(match.id)
+              ? winningMatchIds.contains(match.id)
+              : match.isWin;
+          
+          if ((matchIsWin && streakIsWin) || (!matchIsWin && !streakIsWin)) {
             streakCount++;
           } else {
             break;
@@ -199,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-      final user = _authService.getCurrentUser();
       final String rankingPositionText;
       if (user != null) {
         final globalRanking = await _rankingService.getGlobalRanking(limit: 1000);

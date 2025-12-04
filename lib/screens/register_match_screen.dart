@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import '../theme/neon_theme.dart';
 import '../components/neon_button.dart';
 import '../components/neon_text_field.dart';
+import '../components/player_selector.dart';
+import '../components/participant_manager.dart';
 import '../services/match_service.dart';
 import '../services/game_service.dart';
+import '../services/auth_service.dart';
 import '../models/game.dart';
+import '../models/player.dart';
+import '../models/match_participant.dart';
 
 /// Tela para registrar uma nova partida
 /// 
@@ -23,6 +28,7 @@ class RegisterMatchScreen extends StatefulWidget {
 class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   final _matchService = MatchService();
   final _gameService = GameService();
+  final _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   
   // Controladores dos campos
@@ -30,7 +36,6 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   
   // Estado do formulário
   String? _selectedGameId;
-  String _selectedResult = 'win'; // 'win' ou 'loss'
   DateTime? _selectedDate;
   bool _isLoading = false;
   bool _isLoadingGames = true;
@@ -38,6 +43,9 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   // Listas de jogos
   List<Game> _games = [];
   List<Game> _suggestions = [];
+  
+  // Lista de participantes
+  List<MatchParticipant> _participants = [];
 
   @override
   void initState() {
@@ -50,6 +58,39 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
       _selectedGameId = widget.selectedGame!.id;
     }
     _loadGames();
+    _loadCurrentUserAsParticipant();
+  }
+
+  /// Carrega o usuário atual e o adiciona automaticamente como participante
+  Future<void> _loadCurrentUserAsParticipant() async {
+    try {
+      final user = _authService.getCurrentUser();
+      if (user == null) return;
+
+      final profile = await _authService.getUserProfile();
+      if (profile != null) {
+        final userName = profile['name'] as String? ?? user.email ?? 'Usuário';
+        
+        // Verifica se o usuário já não foi adicionado
+        if (!_participants.any((p) => p.userId == user.id)) {
+          final participant = MatchParticipant(
+            id: '${DateTime.now().millisecondsSinceEpoch}_${user.id}',
+            matchId: '',
+            userId: user.id,
+            name: userName,
+            isWinner: false,
+            score: null,
+            createdAt: DateTime.now(),
+          );
+          
+          setState(() {
+            _participants.add(participant);
+          });
+        }
+      }
+    } catch (e) {
+      // Ignora erro silenciosamente - não é crítico se não conseguir adicionar
+    }
   }
 
   @override
@@ -136,12 +177,23 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
       _isLoading = true;
     });
 
+    // Valida se há pelo menos um participante
+    if (_participants.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, adicione pelo menos um participante'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     try {
       final selectedGame = _games.firstWhere((g) => g.id == _selectedGameId);
       await _matchService.createMatch(
         gameName: selectedGame.name,
-        result: _selectedResult,
         playedAt: _selectedDate,
+        participants: _participants,
       );
 
       // Retorna true para indicar que a partida foi criada
@@ -170,6 +222,77 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         });
       }
     }
+  }
+
+  /// Constrói a seção de participantes
+  Widget _buildParticipantsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Seletor de jogadores
+        PlayerSelector(
+          selectedPlayerIds: _participants
+              .where((p) => p.userId != null)
+              .map((p) => p.userId!)
+              .toList(),
+          onPlayerSelected: (player) {
+            // Verifica se o jogador já foi adicionado
+            if (_participants.any((p) => p.userId == player.id)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${player.name} já foi adicionado'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+            
+            final participant = MatchParticipant(
+              id: '${DateTime.now().millisecondsSinceEpoch}_${player.id}',
+              matchId: '',
+              userId: player.id,
+              name: player.name,
+              isWinner: false,
+              score: null,
+              createdAt: DateTime.now(),
+            );
+            setState(() {
+              _participants.add(participant);
+            });
+          },
+          onAddGuest: (quantity) {
+            final currentGuestCount = _participants.where((p) => p.isGuest).length;
+            final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
+            for (int i = 0; i < quantity; i++) {
+              final guestNumber = currentGuestCount + i + 1;
+              final participant = MatchParticipant(
+                id: '${baseTimestamp}_${i}_${guestNumber}',
+                matchId: '',
+                userId: null,
+                name: 'Convidado $guestNumber',
+                isWinner: false,
+                score: null,
+                createdAt: DateTime.now(),
+              );
+              _participants.add(participant);
+            }
+            setState(() {});
+          },
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Gerenciador de participantes
+        ParticipantManager(
+          participants: _participants,
+          onParticipantsChanged: (participants) {
+            setState(() {
+              _participants = participants;
+            });
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -274,11 +397,6 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                         
                         const SizedBox(height: 20),
                         
-                        // Campo: Resultado
-                        _buildResultSelector(),
-                        
-                        const SizedBox(height: 20),
-                        
                         // Campo: Data
                         GestureDetector(
                           onTap: _selectDate,
@@ -296,6 +414,11 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                             ),
                           ),
                         ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Seção de participantes
+                        _buildParticipantsSection(),
                         
                         const SizedBox(height: 48),
                         
@@ -364,142 +487,6 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     );
   }
 
-  /// Constrói o seletor de resultado
-  Widget _buildResultSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Resultado',
-          style: TextStyle(
-            fontSize: 14,
-            color: NeonTheme.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            // Botão: Vitória
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedResult = 'win';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: _selectedResult == 'win'
-                        ? NeonTheme.green.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedResult == 'win'
-                          ? NeonTheme.green
-                          : NeonTheme.green.withOpacity(0.3),
-                      width: 2,
-                    ),
-                    boxShadow: _selectedResult == 'win'
-                        ? [
-                            BoxShadow(
-                              color: NeonTheme.green.withOpacity(0.2),
-                              blurRadius: 8,
-                              spreadRadius: 0,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.emoji_events,
-                        color: _selectedResult == 'win'
-                            ? NeonTheme.green
-                            : NeonTheme.textSecondary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Vitória',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _selectedResult == 'win'
-                              ? NeonTheme.green
-                              : NeonTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Botão: Derrota
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedResult = 'loss';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: _selectedResult == 'loss'
-                        ? NeonTheme.pink.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedResult == 'loss'
-                          ? NeonTheme.pink
-                          : NeonTheme.pink.withOpacity(0.3),
-                      width: 2,
-                    ),
-                    boxShadow: _selectedResult == 'loss'
-                        ? [
-                            BoxShadow(
-                              color: NeonTheme.pink.withOpacity(0.2),
-                              blurRadius: 8,
-                              spreadRadius: 0,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.sentiment_dissatisfied,
-                        color: _selectedResult == 'loss'
-                            ? NeonTheme.pink
-                            : NeonTheme.textSecondary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Derrota',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _selectedResult == 'loss'
-                              ? NeonTheme.pink
-                              : NeonTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
   /// Constrói o seletor de jogo
   Widget _buildGameSelector() {
