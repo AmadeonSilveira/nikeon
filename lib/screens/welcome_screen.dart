@@ -42,7 +42,7 @@ class WelcomeScreen extends StatelessWidget {
                   
                   // Subtítulo
                   const Text(
-                    'Gerencie suas partidas de board game com facilidade.',
+                    'Gerencie suas partidas de board game',
                     style: NeonTheme.subtitleStyle,
                     textAlign: TextAlign.center,
                   ),

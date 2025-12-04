@@ -48,7 +48,7 @@ dependencies:
   image_picker: ^1.0.7
   
   # file_picker para selecionar arquivos (Windows/Web)
-  file_picker: ^6.1.1
+  file_picker: ^10.3.7
 
 dev_dependencies:
   flutter_test:

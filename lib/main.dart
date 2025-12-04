@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/env.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/config_error_screen.dart';
 import 'services/auth_service.dart';
 
 /// Inicializa o Supabase antes de executar o app
@@ -18,18 +19,47 @@ import 'services/auth_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Carrega as variáveis de ambiente do arquivo .env
-  // O arquivo .env está no .gitignore e não deve ser commitado
-  await dotenv.load(fileName: '.env');
+  String? errorMessage;
 
-  // Inicializa o Supabase com as credenciais do arquivo .env
-  // As credenciais são acessadas através da classe Env para maior segurança
-  await Supabase.initialize(
-    url: Env.supabaseUrl,
-    anonKey: Env.supabaseAnonKey,
-  );
+  try {
+    // Tenta carregar as variáveis de ambiente do arquivo .env
+    // O arquivo .env está no .gitignore e não deve ser commitado
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      errorMessage = 'Erro ao carregar arquivo .env: ${e.toString()}\n\n'
+          'Certifique-se de que o arquivo .env existe na raiz do projeto '
+          'e contém as variáveis SUPABASE_URL e SUPABASE_ANON_KEY.';
+    }
 
-  runApp(const NikeonApp());
+    // Se não houve erro ao carregar o .env, tenta inicializar o Supabase
+    if (errorMessage == null) {
+      try {
+        // Verifica se as variáveis estão configuradas
+        if (!Env.isConfigured) {
+          errorMessage = 'Variáveis de ambiente não configuradas.\n\n'
+              'O arquivo .env deve conter:\n'
+              'SUPABASE_URL=sua_url_aqui\n'
+              'SUPABASE_ANON_KEY=sua_chave_aqui';
+        } else {
+          // Inicializa o Supabase com as credenciais do arquivo .env
+          // As credenciais são acessadas através da classe Env para maior segurança
+          await Supabase.initialize(
+            url: Env.supabaseUrl,
+            anonKey: Env.supabaseAnonKey,
+          );
+        }
+      } catch (e) {
+        errorMessage = 'Erro ao inicializar Supabase: ${e.toString()}\n\n'
+            'Verifique se as credenciais no arquivo .env estão corretas.';
+      }
+    }
+  } catch (e) {
+    errorMessage = 'Erro inesperado ao inicializar o aplicativo: ${e.toString()}';
+  }
+
+  // Se houve erro, mostra a tela de erro. Caso contrário, inicia o app normalmente
+  runApp(NikeonApp(errorMessage: errorMessage));
 }
 
 /// Widget raiz da aplicação Nikeon
@@ -37,11 +67,28 @@ Future<void> main() async {
 /// Configura o MaterialApp e verifica se há sessão ativa.
 /// Se o usuário estiver logado, vai direto para HomeScreen.
 /// Caso contrário, mostra a WelcomeScreen.
+/// Se houver erro de configuração, mostra a tela de erro.
 class NikeonApp extends StatelessWidget {
-  const NikeonApp({super.key});
+  final String? errorMessage;
+
+  const NikeonApp({super.key, this.errorMessage});
 
   @override
   Widget build(BuildContext context) {
+    // Se houver erro de configuração, mostra a tela de erro
+    if (errorMessage != null) {
+      return MaterialApp(
+        title: 'Nikeon',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          useMaterial3: true,
+        ),
+        home: ConfigErrorScreen(errorMessage: errorMessage!),
+      );
+    }
+
+    // Caso contrário, inicia o app normalmente
     final authService = AuthService();
 
     return MaterialApp(
